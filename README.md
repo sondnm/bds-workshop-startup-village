@@ -43,7 +43,8 @@ pip install -r requirements.txt
 Create a `.env` file in the project root:
 
 ```
-BIRDEYE_API_KEY=your_api_key_here
+BDS_STANDARD_API_KEY=your_standard_api_key_here
+BDS_API_KEY=your_business_api_key_here
 ```
 
 **Important**: Never commit your API key to version control!

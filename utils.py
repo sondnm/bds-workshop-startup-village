@@ -20,16 +20,23 @@ load_dotenv()
 class BirdeyeDataServices:
     """Custom wrapper for Birdeye Data Services API requests"""
 
-    def __init__(self, api_key=None):
-        self.api_key = api_key or os.getenv('BIRDEYE_API_KEY')
+    def __init__(self, api_key_type='standard'):
+        if api_key_type == 'standard':
+            self.api_key = os.getenv('BDS_STANDARD_API_KEY')
+            if not self.api_key:
+                raise ValueError("BDS_STANDARD_API_KEY not found in environment variables")
+        elif api_key_type == 'business':
+            self.api_key = os.getenv('BDS_API_KEY')
+            if not self.api_key:
+                raise ValueError("BDS_API_KEY not found in environment variables")
+        else:
+            raise ValueError("api_key_type must be 'standard' or 'business'")
+
         self.base_url = "https://public-api.birdeye.so"
         self.headers = {
             'X-API-KEY': self.api_key,
             'Content-Type': 'application/json'
         }
-
-        if not self.api_key:
-            raise ValueError("API key not found. Please set BIRDEYE_API_KEY in .env file")
 
     def _make_request(self, endpoint, params=None):
         """Make HTTP request to Birdeye Data Services API"""
@@ -52,15 +59,32 @@ class BirdeyeDataServices:
         return self._make_request("/defi/price", {"address": address})
     
     def get_token_overview(self, address):
-        """Get token metadata and trading data"""
+        """Get token metadata and trading data (deprecated - use get_token_market_data for standard API)"""
         return self._make_request("/defi/token_overview", {"address": address})
+
+    def get_token_market_data(self, address):
+        """Get token market data (available for standard API key)"""
+        return self._make_request("/defi/v3/token/market-data", {"address": address})
+
+    def get_token_list(self, limit=20, min_liquidity=100000, max_liquidity=10000000, sort_by="v24hUSD", sort_type="desc"):
+        """Get token list with filtering and sorting"""
+        params = {
+            "limit": limit,
+            "min_liquidity": min_liquidity,
+            "max_liquidity": max_liquidity,
+            "sort_by": sort_by,
+            "sort_type": sort_type
+        }
+        return self._make_request("/defi/tokenlist", params)
     
-    def get_price_history(self, address, address_type="token", type_="1D"):
+    def get_price_history(self, address, address_type="token", type_="1D", time_from=None, time_to=None):
         """Get historical price data"""
         params = {
             "address": address,
             "address_type": address_type,
-            "type": type_
+            "type": type_,
+            "time_from": time_from or int((datetime.now() - timedelta(days=30)).timestamp()),
+            "time_to": time_to or int(datetime.now().timestamp()),
         }
         return self._make_request("/defi/history_price", params)
     
@@ -91,8 +115,17 @@ class BirdeyeDataServices:
 class BirdeyeDataServicesWebSocket:
     """WebSocket client for real-time Birdeye Data Services data"""
 
-    def __init__(self, api_key=None):
-        self.api_key = api_key or os.getenv('BIRDEYE_API_KEY')
+    def __init__(self, api_key_type='business'):
+        if api_key_type == 'standard':
+            self.api_key = os.getenv('BDS_STANDARD_API_KEY')
+        elif api_key_type == 'business':
+            self.api_key = os.getenv('BDS_API_KEY')
+        else:
+            raise ValueError("api_key_type must be 'standard' or 'business'")
+
+        if not self.api_key:
+            raise ValueError(f"API key not found for {api_key_type} tier")
+
         self.ws_url = "wss://public-api.birdeye.so/socket"
         self.ws = None
         self.callbacks = {}
@@ -156,55 +189,18 @@ class BirdeyeDataServicesWebSocket:
             self.ws.close()
 
 
-def create_price_chart(price_data, token_symbol="Token"):
+def create_price_chart(price_data, token_address):
     """Create interactive price chart using Plotly"""
     if not price_data or 'data' not in price_data:
-        print(f"❌ No price data available for {token_symbol}")
+        print(f"❌ No price data available for {token_address}")
         return None
 
     items = price_data['data'].get('items', [])
     if not items:
-        print(f"⚠️ No price history data points available for {token_symbol}")
+        print(f"⚠️No price  history data points available for {token_address}")
         print("This might be due to API limitations or the token being too new.")
-
-        # Create a demo chart with sample data
-        from datetime import datetime, timedelta
-
-        print(f"📊 Creating demo chart for {token_symbol}...")
-
-        # Generate sample data for demonstration
-        dates = [datetime.now() - timedelta(hours=i) for i in range(24, 0, -1)]
-        base_price = 100.0
-        import random
-        prices = [base_price + random.gauss(0, 5) for _ in dates]
-
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=dates,
-            y=prices,
-            mode='lines',
-            name=f'{token_symbol} Price (Demo Data)',
-            line=dict(color='#FF6B6B', width=2, dash='dash')
-        ))
-
-        fig.update_layout(
-            title=f'{token_symbol} Price History (Demo Data)',
-            xaxis_title='Time',
-            yaxis_title='Price (USD)',
-            template='plotly_dark',
-            height=400,
-            annotations=[
-                dict(
-                    x=0.5, y=0.95,
-                    xref='paper', yref='paper',
-                    text='⚠️ Demo data - Real data not available',
-                    showarrow=False,
-                    font=dict(color='orange', size=12)
-                )
-            ]
-        )
-
-        return fig
+        print("📊 No chart will be displayed - only real data is shown.")
+        return None
 
     # Create chart with real data
     df = pd.DataFrame(items)
@@ -215,12 +211,12 @@ def create_price_chart(price_data, token_symbol="Token"):
         x=df['datetime'],
         y=df['value'],
         mode='lines',
-        name=f'{token_symbol} Price',
+        name=f'{token_address} Price',
         line=dict(color='#00D4AA', width=2)
     ))
 
     fig.update_layout(
-        title=f'{token_symbol} Price History',
+        title=f'{token_address} Price History',
         xaxis_title='Time',
         yaxis_title='Price (USD)',
         template='plotly_dark',
@@ -233,11 +229,27 @@ def create_price_chart(price_data, token_symbol="Token"):
 def create_candlestick_chart(ohlcv_data, token_symbol="Token"):
     """Create candlestick chart for OHLCV data"""
     if not ohlcv_data or 'data' not in ohlcv_data:
+        print("No OHLCV data available")
         return None
-    
-    df = pd.DataFrame(ohlcv_data['data']['items'])
+
+    items = ohlcv_data['data'].get('items', [])
+    if not items:
+        print("No OHLCV items available")
+        return None
+
+    df = pd.DataFrame(items)
+
+    # Check for required OHLCV fields
+    required_fields = ['o', 'h', 'l', 'c', 'unixTime']
+    missing_fields = [field for field in required_fields if field not in df.columns]
+
+    if missing_fields:
+        print(f"Missing OHLCV fields: {missing_fields}")
+        print(f"Available fields: {list(df.columns)}")
+        return None
+
     df['datetime'] = pd.to_datetime(df['unixTime'], unit='s')
-    
+
     fig = go.Figure(data=go.Candlestick(
         x=df['datetime'],
         open=df['o'],
@@ -246,7 +258,7 @@ def create_candlestick_chart(ohlcv_data, token_symbol="Token"):
         close=df['c'],
         name=token_symbol
     ))
-    
+
     fig.update_layout(
         title=f'{token_symbol} OHLCV Chart',
         xaxis_title='Time',
@@ -254,28 +266,61 @@ def create_candlestick_chart(ohlcv_data, token_symbol="Token"):
         template='plotly_dark',
         height=500
     )
-    
+
     return fig
 
 
 def create_portfolio_chart(net_worth_data):
     """Create portfolio net worth chart"""
     if not net_worth_data or 'data' not in net_worth_data:
+        print("No portfolio data available")
         return None
-    
-    df = pd.DataFrame(net_worth_data['data'])
-    df['datetime'] = pd.to_datetime(df['unixTime'], unit='s')
-    
+
+    data = net_worth_data['data']
+
+    # Handle different response formats
+    if isinstance(data, dict) and 'history' in data:
+        # Net worth history response format
+        history = data['history']
+        if not history:
+            print("No history data available")
+            return None
+        df = pd.DataFrame(history)
+
+        # Use correct field names for history
+        timestamp_field = 'timestamp' if 'timestamp' in df.columns else 'unix_time'
+        value_field = 'total_value' if 'total_value' in df.columns else 'value'
+
+    elif isinstance(data, list):
+        # Direct list format
+        df = pd.DataFrame(data)
+        timestamp_field = 'unixTime' if 'unixTime' in df.columns else 'timestamp'
+        value_field = 'totalUsd' if 'totalUsd' in df.columns else 'total_value'
+    else:
+        print("Unexpected data format for portfolio chart")
+        return None
+
+    if df.empty:
+        print("Empty portfolio data")
+        return None
+
+    # Check if required fields exist
+    if timestamp_field not in df.columns or value_field not in df.columns:
+        print(f"Missing required fields. Available: {list(df.columns)}")
+        return None
+
+    df['datetime'] = pd.to_datetime(df[timestamp_field], unit='s')
+
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=df['datetime'],
-        y=df['totalUsd'],
+        y=df[value_field],
         mode='lines+markers',
         name='Net Worth',
         line=dict(color='#FFD700', width=3),
         marker=dict(size=6)
     ))
-    
+
     fig.update_layout(
         title='Portfolio Net Worth Over Time',
         xaxis_title='Date',
@@ -283,7 +328,73 @@ def create_portfolio_chart(net_worth_data):
         template='plotly_dark',
         height=400
     )
-    
+
+    return fig
+
+
+def create_portfolio_pie_chart(net_worth_data, title="Portfolio Allocation"):
+    """Create portfolio allocation pie chart"""
+    if not net_worth_data or 'data' not in net_worth_data:
+        print("No portfolio data available for pie chart")
+        return None
+
+    data = net_worth_data['data']
+
+    # Get items from the response
+    if 'items' not in data or not data['items']:
+        print("No portfolio items available for pie chart")
+        return None
+
+    items = data['items']
+
+    # Prepare data for pie chart
+    symbols = []
+    values = []
+    colors = []
+
+    # Color palette for the pie chart
+    color_palette = [
+        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+        '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+    ]
+
+    for i, item in enumerate(items[:10]):  # Show top 10 holdings
+        symbol = item.get('symbol', 'Unknown')
+        value = item.get('value', 0)
+
+        if value > 0:  # Only include tokens with value
+            symbols.append(symbol)
+            values.append(value)
+            colors.append(color_palette[i % len(color_palette)])
+
+    if not values:
+        print("No tokens with value found for pie chart")
+        return None
+
+    # Create pie chart
+    fig = go.Figure(data=go.Pie(
+        labels=symbols,
+        values=values,
+        hole=0.3,  # Donut chart
+        marker=dict(colors=colors),
+        textinfo='label+percent',
+        textposition='outside'
+    ))
+
+    fig.update_layout(
+        title=title,
+        template='plotly_dark',
+        height=500,
+        showlegend=True,
+        legend=dict(
+            orientation="v",
+            yanchor="middle",
+            y=0.5,
+            xanchor="left",
+            x=1.01
+        )
+    )
+
     return fig
 
 
@@ -291,19 +402,21 @@ def format_transaction_data(tx_data):
     """Format transaction data for display"""
     if not tx_data or 'data' not in tx_data:
         return pd.DataFrame()
-    
+
     transactions = []
     for tx in tx_data['data']['items']:
         transactions.append({
-            'Time': datetime.fromtimestamp(tx.get('blockUnixTime', 0)).strftime('%Y-%m-%d %H:%M:%S'),
-            'Type': tx.get('txType', 'Unknown'),
-            'Amount': f"{tx.get('changeAmount', 0):.6f}",
-            'USD Value': f"${tx.get('changeAmountUsd', 0):.2f}",
-            'From': tx.get('from', '')[:10] + '...' if tx.get('from') else '',
-            'To': tx.get('to', '')[:10] + '...' if tx.get('to') else '',
-            'Signature': tx.get('txHash', '')[:10] + '...' if tx.get('txHash') else ''
+            'Time': datetime.fromtimestamp(tx.get('block_unix_time', 0)).strftime('%Y-%m-%d %H:%M:%S') if tx.get('block_unix_time') else 'N/A',
+            'Type': tx.get('tx_type', 'Unknown'),
+            'Volume': f"{tx.get('volume', 0):.6f}" if tx.get('volume') else 'N/A',
+            'USD Value': f"${tx.get('volume_usd', 0):.2f}" if tx.get('volume_usd') else 'N/A',
+            'Side': tx.get('side', 'N/A'),
+            'Source': tx.get('source', 'N/A'),
+            'From': tx.get('from', {}).get('symbol', 'N/A') if isinstance(tx.get('from'), dict) else 'N/A',
+            'To': tx.get('to', {}).get('symbol', 'N/A') if isinstance(tx.get('to'), dict) else 'N/A',
+            'Hash': (tx.get('tx_hash', '') or '')[:10] + '...' if tx.get('tx_hash') else 'N/A'
         })
-    
+
     return pd.DataFrame(transactions)
 
 
@@ -336,15 +449,24 @@ def display_token_info(token_data):
     print("=" * 50)
 
 
-def check_api_key():
+def check_api_key(api_key_type='standard'):
     """Check if API key is properly configured"""
-    api_key = os.getenv('BIRDEYE_API_KEY')
+    if api_key_type == 'standard':
+        api_key = os.getenv('BDS_STANDARD_API_KEY')
+        key_name = 'BDS_STANDARD_API_KEY'
+    elif api_key_type == 'business':
+        api_key = os.getenv('BDS_API_KEY')
+        key_name = 'BDS_API_KEY'
+    else:
+        print("❌ Invalid API key type!")
+        return False
+
     if not api_key:
-        print("❌ API key not found!")
-        print("Please create a .env file with your BIRDEYE_API_KEY")
+        print(f"❌ {key_name} not found!")
+        print(f"Please add {key_name} to your .env file")
         return False
     else:
-        print("✅ API key found!")
+        print(f"✅ {key_name} found!")
         return True
 
 # Create an alias for backward compatibility
