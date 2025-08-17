@@ -1,0 +1,55 @@
+# Jupyter Book Configuration
+title: "Birdeye Data Services Workshop"
+author: "Birdeye Data Services"
+logo: "logo.png"
+
+# Force re-execution of notebooks on each build
+execute:
+  execute_notebooks: force
+
+# Define the left-hand table of contents
+format: jb-book
+chapters:
+- file: 00_Introduction
+- file: 01_Token_Information  
+- file: 02_Wallet_Portfolio
+
+# Information about where the book exists on the web
+repository:
+  url: https://github.com/birdeye-so/bds-workshop
+  branch: main
+
+# Add a bibtex file so that we can create citations
+bibtex_bibfiles:
+  - references.bib
+
+# Add GitHub buttons to your book
+html:
+  use_issues_button: true
+  use_repository_button: true
+
+# Launch buttons for Binder and JupyterLite
+launch_buttons:
+  notebook_interface: "jupyterlab"
+  binderhub_url: ""
+  jupyterlite_url: "https://jupyterlite.readthedocs.io/en/latest/try/lab"
+
+# Jupyter Lite configuration
+jupyterlite:
+  contents:
+    - "*.ipynb"
+    - "*.py"
+    - "*.md"
+    - "requirements.txt"
+    - ".env"
+  
+# Sphinx configuration
+sphinx:
+  config:
+    html_theme_options:
+      repository_url: https://github.com/birdeye-so/bds-workshop
+      use_repository_button: true
+      use_issues_button: true
+      use_edit_page_button: true
+      launch_buttons:
+        jupyterlite_url: "https://jupyterlite.readthedocs.io/en/latest/try/lab"

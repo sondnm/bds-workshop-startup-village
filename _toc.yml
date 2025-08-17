@@ -1,0 +1,12 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: index
+chapters:
+- file: 00_Introduction
+  title: "Introduction & Setup"
+- file: 01_Token_Information
+  title: "Token Information Dashboard"
+- file: 02_Wallet_Portfolio
+  title: "Wallet Portfolio Manager"
