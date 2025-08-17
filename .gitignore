@@ -125,3 +125,8 @@ logs/
 # Temporary files
 *.tmp
 *.temp
+
+# Nodejs
+node_modules/
+*.html
+openapi_docs.json
