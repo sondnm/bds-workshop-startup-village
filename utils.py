@@ -102,9 +102,9 @@ class BirdeyeDataServices:
         """Get wallet net worth history"""
         return self._make_request("/wallet/v2/net-worth", {"wallet": wallet_address})
     
-    def get_wallet_net_worth_details(self, wallet_address):
+    def get_wallet_net_worth_details(self, wallet_address, type="1d", time=None):
         """Get detailed breakdown of wallet holdings"""
-        return self._make_request("/wallet/v2/net-worth-details", {"wallet": wallet_address})
+        return self._make_request("/wallet/v2/net-worth-details", {"wallet": wallet_address, "time": time, "type": type})
     
     def get_ohlcv_data(self, address, type_="1D", time_from=None, time_to=None):
         """Get OHLCV candlestick data"""
@@ -203,9 +203,9 @@ def create_price_chart(price_data, token_address):
 
     items = price_data['data'].get('items', [])
     if not items:
-        print(f"⚠️No price  history data points available for {token_address}")
+        print(f"No price  history data points available for {token_address}")
         print("This might be due to API limitations or the token being too new.")
-        print("📊 No chart will be displayed - only real data is shown.")
+        print("No chart will be displayed - only real data is shown.")
         return None
 
     # Create chart with real data
@@ -403,6 +403,70 @@ def create_portfolio_pie_chart(net_worth_data, title="Portfolio Allocation"):
 
     return fig
 
+def create_portfolio_history_pie_chart(net_worth_data, title="Portfolio Allocation"):
+    """Create portfolio allocation pie chart"""
+    if not net_worth_data or 'data' not in net_worth_data:
+        print("No portfolio data available for pie chart")
+        return None
+
+    data = net_worth_data['data']
+
+    # Get items from the response
+    if 'net_assets' not in data or not data['net_assets']:
+        print("No portfolio items available for pie chart")
+        return None
+
+    items = data['net_assets']
+
+    # Prepare data for pie chart
+    symbols = []
+    values = []
+    colors = []
+
+    # Color palette for the pie chart
+    color_palette = [
+        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+        '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+    ]
+
+    for i, item in enumerate(items[:10]):  # Show top 10 holdings
+        symbol = item.get('symbol', 'Unknown')
+        value = float(item.get('value', 0))
+
+        if value > 0:  # Only include tokens with value
+            symbols.append(symbol)
+            values.append(value)
+            colors.append(color_palette[i % len(color_palette)])
+
+    if not values:
+        print("No tokens with value found for pie chart")
+        return None
+
+    # Create pie chart
+    fig = go.Figure(data=go.Pie(
+        labels=symbols,
+        values=values,
+        hole=0.3,  # Donut chart
+        marker=dict(colors=colors),
+        textinfo='label+percent',
+        textposition='outside'
+    ))
+
+    fig.update_layout(
+        title=title,
+        template='plotly_dark',
+        height=500,
+        showlegend=True,
+        legend=dict(
+            orientation="v",
+            yanchor="middle",
+            y=0.5,
+            xanchor="left",
+            x=1.01
+        )
+    )
+
+    return fig
 
 def format_transaction_data(tx_data):
     """Format transaction data for display"""
