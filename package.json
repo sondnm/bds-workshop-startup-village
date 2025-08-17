@@ -1,0 +1,32 @@
+{
+  "name": "bds-realtime-chart",
+  "version": "1.0.0",
+  "description": "Real-time candlestick chart using Birdeye Data Services API and TradingView Lightweight Charts",
+  "main": "realtime-chart-server.js",
+  "scripts": {
+    "start": "node start-server.js",
+    "generate": "node generate-chart-html.js",
+    "dev": "node generate-chart-html.js && node start-server.js",
+    "build": "node generate-chart-html.js"
+  },
+  "keywords": [
+    "birdeye",
+    "tradingview",
+    "candlestick",
+    "realtime",
+    "websocket",
+    "crypto",
+    "solana"
+  ],
+  "author": "BDS Workshop",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

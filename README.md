@@ -18,10 +18,18 @@ Welcome to the Birdeye Data Services API Workshop! This hands-on session will te
 - Real-time updates via WebSocket
 - Interactive token exploration
 
+### Section 3: Real-time OHLCV Updates & Professional Charts
+- Generate standalone HTML charts with TradingView integration
+- Real-time WebSocket OHLCV data updates
+- Professional candlestick and volume visualization
+- Multiple timeframes (1m, 5m, 15m, 1H, 4H, 1D)
+- Direct connection to Birdeye API (no server required)
+
 ## 📋 Prerequisites
 
 - Basic Python knowledge
 - Jupyter Notebook environment
+- Node.js (for Section 3 chart generation)
 - Internet connection for API calls
 
 ## 🛠 Setup Instructions
@@ -54,7 +62,14 @@ BDS_API_KEY=your_business_api_key_here
 1. **00_Introduction.ipynb** - Workshop overview and setup
 2. **01_Token_Information.ipynb** - Token querying and analysis
 3. **02_Wallet_Portfolio.ipynb** - Portfolio management and WebSocket
-4. **utils.py** - Shared utility functions
+4. **03_Realtime_Updates.ipynb** - Real-time OHLCV updates and professional charts
+5. **utils.py** - Shared utility functions
+
+### Chart Generator Files
+- **generate-chart-html.js** - HTML chart generator script
+- **start-server.js** - Chart launcher script
+- **package.json** - Node.js dependencies
+- **CHART_README.md** - Chart setup and usage guide
 
 ## 🔗 Useful Links
 
@@ -70,6 +85,9 @@ By the end of this workshop, you'll be able to:
 - Build real-time data visualizations
 - Implement WebSocket connections for live updates
 - Create professional-grade blockchain data dashboards
+- Generate standalone HTML charts with TradingView integration
+- Build real-time OHLCV candlestick charts
+- Connect directly to Birdeye WebSocket for live market data
 
 ## 🤝 Support
 
