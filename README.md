@@ -67,16 +67,13 @@ BDS_API_KEY=your_business_api_key_here
 
 ### Chart Generator Files
 - **generate-chart-html.js** - HTML chart generator script
-- **start-server.js** - Chart launcher script
 - **package.json** - Node.js dependencies
 - **CHART_README.md** - Chart setup and usage guide
 
 ## 🔗 Useful Links
 
-- [Birdeye Data Services API Documentation](https://docs.birdeye.so/reference/get-defi-price)
+- [Birdeye Data Services API Documentation](https://docs.birdeye.so/reference)
 - [WebSocket Guide](https://docs.birdeye.so/docs/websocket)
-- [Subscribe Price WebSocket](https://docs.birdeye.so/docs/subscribe-price)
-- [Subscribe Transactions WebSocket](https://docs.birdeye.so/docs/subscribe_txs)
 
 ## 🎯 Learning Objectives
 
