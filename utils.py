@@ -131,7 +131,7 @@ class BirdeyeDataServicesWebSocket:
         if not self.api_key:
             raise ValueError(f"API key not found for {api_key_type} tier")
 
-        self.ws_url = "wss://public-api.birdeye.so/socket"
+        self.ws_url = "wss://public-api.birdeye.so/socket/solana?x-api-key={self.api_key}"
         self.ws = None
         self.callbacks = {}
         
@@ -151,6 +151,7 @@ class BirdeyeDataServicesWebSocket:
         
         self.ws = websocket.WebSocketApp(
             self.ws_url,
+            subprotocols=["echo-protocol"],
             on_message=on_message,
             on_error=on_error,
             on_close=on_close
@@ -244,8 +245,8 @@ def create_candlestick_chart(ohlcv_data, token_symbol="Token"):
 
     df = pd.DataFrame(items)
 
-    # Check for required OHLCV fields
-    required_fields = ['o', 'h', 'l', 'c', 'unixTime']
+    # Check for required OHLCV fields - use unix_time instead of unixTime
+    required_fields = ['o', 'h', 'l', 'c', 'unix_time']
     missing_fields = [field for field in required_fields if field not in df.columns]
 
     if missing_fields:
@@ -253,7 +254,7 @@ def create_candlestick_chart(ohlcv_data, token_symbol="Token"):
         print(f"Available fields: {list(df.columns)}")
         return None
 
-    df['datetime'] = pd.to_datetime(df['unixTime'], unit='s')
+    df['datetime'] = pd.to_datetime(df['unix_time'], unit='s')
 
     fig = go.Figure(data=go.Candlestick(
         x=df['datetime'],
@@ -294,13 +295,13 @@ def create_portfolio_chart(net_worth_data):
 
         # Use correct field names for history
         timestamp_field = 'timestamp' if 'timestamp' in df.columns else 'unix_time'
-        value_field = 'total_value' if 'total_value' in df.columns else 'value'
+        value_field = 'net_worth' if 'net_worth' in df.columns else 'value'
 
     elif isinstance(data, list):
         # Direct list format
         df = pd.DataFrame(data)
-        timestamp_field = 'unixTime' if 'unixTime' in df.columns else 'timestamp'
-        value_field = 'totalUsd' if 'totalUsd' in df.columns else 'total_value'
+        timestamp_field = 'timestamp' if 'timestamp' in df.columns else 'timestamp'
+        value_field = 'net_worth' if 'net_worth' in df.columns else 'value'
     else:
         print("Unexpected data format for portfolio chart")
         return None
@@ -314,7 +315,7 @@ def create_portfolio_chart(net_worth_data):
         print(f"Missing required fields. Available: {list(df.columns)}")
         return None
 
-    df['datetime'] = pd.to_datetime(df[timestamp_field], unit='s')
+    df['datetime'] = pd.to_datetime(df[timestamp_field], utc=True)
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
@@ -365,7 +366,7 @@ def create_portfolio_pie_chart(net_worth_data, title="Portfolio Allocation"):
 
     for i, item in enumerate(items[:10]):  # Show top 10 holdings
         symbol = item.get('symbol', 'Unknown')
-        value = item.get('value', 0)
+        value = float(item.get('value', 0))
 
         if value > 0:  # Only include tokens with value
             symbols.append(symbol)
@@ -426,6 +427,7 @@ def format_transaction_data(tx_data):
 
 
 def format_currency(value):
+    value = float(value)
     """Format currency values for display"""
     if value >= 1e9:
         return f"${value/1e9:.2f}B"
