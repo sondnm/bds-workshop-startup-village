@@ -106,6 +106,59 @@ function generateChartHTML() {
             font-size: 18px;
             font-weight: bold;
         }
+        .token-info {
+            background-color: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .token-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .token-details h2 {
+            margin: 0;
+            color: #2196f3;
+        }
+        .token-address {
+            font-family: monospace;
+            font-size: 12px;
+            color: #888;
+        }
+        .highlight-target {
+            transition: all 0.3s ease;
+        }
+        .highlight {
+            background-color: #4caf50 !important;
+            color: white !important;
+            transform: scale(1.05);
+            border-radius: 4px;
+            padding: 2px 4px;
+        }
+        .transactions-panel {
+            background-color: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .transaction-item {
+            padding: 8px;
+            border-bottom: 1px solid #404040;
+            font-size: 12px;
+            font-family: monospace;
+        }
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+        .transaction-buy {
+            border-left: 3px solid #4caf50;
+        }
+        .transaction-sell {
+            border-left: 3px solid #f44336;
+        }
         #log {
             background-color: #2a2a2a;
             padding: 15px;
@@ -124,7 +177,7 @@ function generateChartHTML() {
         </div>
         
         <div class="controls">
-            <input type="text" id="tokenAddress" placeholder="Token Address" value="${SOL_ADDRESS}">
+            <input type="text" id="tokenAddressInput" placeholder="Token Address" value="${SOL_ADDRESS}">
             <select id="timeframe">
                 <option value="1m">1 minute</option>
                 <option value="5m">5 minutes</option>
@@ -142,7 +195,47 @@ function generateChartHTML() {
         <div id="status" class="status disconnected">
             Status: Disconnected
         </div>
-        
+
+        <div class="token-info">
+            <div class="token-header">
+                <img id="tokenLogo" src="" alt="Token Logo" style="width: 40px; height: 40px; border-radius: 50%; display: none;">
+                <div class="token-details">
+                    <h2 id="tokenSymbol">Token</h2>
+                    <div id="tokenAddress" class="token-address"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <div class="info-card">
+                <h3>Current Price</h3>
+                <div id="currentPrice" class="value highlight-target">$0.00</div>
+            </div>
+            <div class="info-card">
+                <h3>24h Change</h3>
+                <div id="priceChange" class="value highlight-target">0.00%</div>
+            </div>
+            <div class="info-card">
+                <h3>Market Cap</h3>
+                <div id="marketCap" class="value highlight-target">$0</div>
+            </div>
+            <div class="info-card">
+                <h3>Liquidity</h3>
+                <div id="liquidity" class="value highlight-target">$0</div>
+            </div>
+            <div class="info-card">
+                <h3>24h Volume</h3>
+                <div id="volume24h" class="value highlight-target">$0</div>
+            </div>
+        </div>
+
+        <div class="transactions-panel">
+            <h3>🔄 Live Transactions</h3>
+            <div id="transactionsList">
+                <div class="transaction-item">No transactions yet...</div>
+            </div>
+        </div>
+
         <div id="chartContainer" class="chart-container"></div>
         
         <div id="log">
@@ -161,9 +254,13 @@ function generateChartHTML() {
         let candlestickSeries;
         let volumeSeries;
         let ws;
-        let updateCount = 0;
         let currentCandle = null;
         let candleStartTime = null;
+
+        // Token stats and transactions
+        let tokenStats = {};
+        let transactions = [];
+        let maxTransactions = 20;
         
         // Initialize chart
         function initChart() {
@@ -224,17 +321,63 @@ function generateChartHTML() {
             
             log('📈 Chart initialized successfully');
         }
-        
+
+        // Load initial token stats
+        async function loadTokenStats() {
+            const tokenAddress = document.getElementById('tokenAddressInput').value;
+
+            if (!tokenAddress) {
+                return;
+            }
+
+            try {
+                log(\`📊 Loading token stats for \${tokenAddress.substring(0, 8)}...\`);
+
+                // Call token overview API
+                const response = await fetch(\`\${BDS_BASE_URL}/defi/token_overview?address=\${tokenAddress}\`, {
+                    headers: {
+                        'X-API-KEY': BDS_API_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    const data = result.data;
+                    tokenStats = {
+                        symbol: data.symbol || 'Unknown',
+                        logoURI: data.logoURI || '',
+                        price: data.price || 0,
+                        priceChange24h: data.priceChange24hPercent || 0,
+                        marketCap: data.marketCap || 0,
+                        liquidity: data.liquidity || 0,
+                        volume24h: data.v24hUSD || 0
+                    };
+
+                    updateTokenDisplay();
+                    log(\`✅ Token stats loaded for \${tokenStats.symbol}\`);
+                } else {
+                    log(\`❌ Failed to load token stats: \${result.message || 'Unknown error'}\`);
+                }
+            } catch (error) {
+                log(\`❌ Error loading token stats: \${error.message}\`);
+            }
+        }
+
         // Load historical OHLCV data directly from Birdeye API
         async function loadHistoricalData() {
-            const tokenAddress = document.getElementById('tokenAddress').value;
+            const tokenAddress = document.getElementById('tokenAddressInput').value;
             const timeframe = document.getElementById('timeframe').value;
             
             if (!tokenAddress) {
                 log('❌ Please enter a token address');
                 return;
             }
-            
+
+            // Load token stats first
+            await loadTokenStats();
+
             try {
                 log(\`🔄 Loading historical data for \${tokenAddress.substring(0, 8)}...\`);
                 
@@ -279,9 +422,120 @@ function generateChartHTML() {
             }
         }
 
+        // Update token display
+        function updateTokenDisplay() {
+            if (tokenStats.symbol) {
+                document.getElementById('tokenSymbol').textContent = tokenStats.symbol;
+                document.getElementById('tokenAddress').textContent = document.getElementById('tokenAddressInput').value;
+
+                if (tokenStats.logoURI) {
+                    const logoImg = document.getElementById('tokenLogo');
+                    logoImg.src = tokenStats.logoURI;
+                    logoImg.style.display = 'block';
+                }
+
+                updateCurrentPrice(tokenStats.price);
+                updatePriceChange(tokenStats.priceChange24h);
+                updateMarketCap(tokenStats.marketCap);
+                updateLiquidity(tokenStats.liquidity);
+                updateVolume24h(tokenStats.volume24h);
+            }
+        }
+
+        // Update functions with highlighting
+        function updateCurrentPrice(price) {
+            const element = document.getElementById('currentPrice');
+            element.textContent = \`$\${formatNumber(price)}\`;
+            highlightUpdate(element);
+        }
+
+        function updatePriceChange(change) {
+            const element = document.getElementById('priceChange');
+            const isPositive = change >= 0;
+            element.textContent = \`\${isPositive ? '+' : ''}\${change.toFixed(2)}%\`;
+            element.style.color = isPositive ? '#4caf50' : '#f44336';
+            highlightUpdate(element);
+        }
+
+        function updateMarketCap(marketCap) {
+            const element = document.getElementById('marketCap');
+            element.textContent = \`$\${formatNumber(marketCap)}\`;
+            highlightUpdate(element);
+        }
+
+        function updateLiquidity(liquidity) {
+            const element = document.getElementById('liquidity');
+            element.textContent = \`$\${formatNumber(liquidity)}\`;
+            highlightUpdate(element);
+        }
+
+        function updateVolume24h(volume) {
+            const element = document.getElementById('volume24h');
+            element.textContent = \`$\${formatNumber(volume)}\`;
+            highlightUpdate(element);
+        }
+
+        // Highlight update function
+        function highlightUpdate(element) {
+            element.classList.add('highlight');
+            setTimeout(() => {
+                element.classList.remove('highlight');
+            }, 1000);
+        }
+
+        // Format number function
+        function formatNumber(num) {
+            if (num >= 1e9) {
+                return (num / 1e9).toFixed(2) + 'B';
+            } else if (num >= 1e6) {
+                return (num / 1e6).toFixed(2) + 'M';
+            } else if (num >= 1e3) {
+                return (num / 1e3).toFixed(2) + 'K';
+            } else if (num >= 1) {
+                return num.toFixed(2);
+            } else {
+                return num.toFixed(6);
+            }
+        }
+
+        // Add transaction to list
+        function addTransaction(txData) {
+            const transactionsList = document.getElementById('transactionsList');
+
+            // Create transaction item
+            const txItem = document.createElement('div');
+            txItem.className = \`transaction-item \${txData.side === 'buy' ? 'transaction-buy' : 'transaction-sell'}\`;
+
+            const timestamp = new Date(txData.blockUnixTime * 1000).toLocaleTimeString();
+            const fromAmount = txData.from?.uiAmount || 0;
+            const fromSymbol = txData.from?.symbol || 'Unknown';
+            const toAmount = txData.to?.uiAmount || 0;
+            const toSymbol = txData.to?.symbol || 'Unknown';
+            const volumeUSD = txData.volumeUSD || 0;
+
+            txItem.innerHTML = \`
+                <div>[\${timestamp}] \${txData.side.toUpperCase()}</div>
+                <div>\${fromAmount.toFixed(4)} \${fromSymbol} → \${toAmount.toFixed(4)} \${toSymbol}</div>
+                <div>Volume: $\${volumeUSD.toFixed(2)}</div>
+            \`;
+
+            // Add to beginning of list
+            if (transactionsList.firstChild && transactionsList.firstChild.textContent !== 'No transactions yet...') {
+                transactionsList.insertBefore(txItem, transactionsList.firstChild);
+            } else {
+                transactionsList.innerHTML = '';
+                transactionsList.appendChild(txItem);
+            }
+
+            // Keep only last maxTransactions
+            while (transactionsList.children.length > maxTransactions) {
+                transactionsList.removeChild(transactionsList.lastChild);
+            }
+        }
+
         // Connect WebSocket directly to Birdeye
         function connectWebSocket() {
-            const tokenAddress = document.getElementById('tokenAddress').value;
+            const tokenAddress = document.getElementById('tokenAddressInput').value;
             const timeframe = document.getElementById('timeframe').value;
 
             if (!tokenAddress) {
@@ -317,7 +571,37 @@ function generateChartHTML() {
                     };
 
                     ws.send(JSON.stringify(subscribeMessage));
-                    log(\`📡 Subscribed to Birdeye price updates for \${tokenAddress.substring(0, 8)}...\`);
+                    log(\`📡 Subscribed to price updates for \${tokenAddress.substring(0, 8)}...\`);
+
+                    // Subscribe to token stats updates
+                    const subscribeStatsMessage = {
+                        type: 'SUBSCRIBE_TOKEN_STATS',
+                        data: {
+                            address: tokenAddress,
+                            select: {
+                              price: true,
+                              liquidity: true,
+                              marketcap: true,
+                              trade_data: {
+                                volume: true,
+                                price_change: true,
+                                intervals: ["24h"],
+                              },
+                            },
+                        }
+                    };
+                    ws.send(JSON.stringify(subscribeStatsMessage));
+                    log(\`📊 Subscribed to token stats for \${tokenAddress.substring(0, 8)}...\`);
+
+                    // Subscribe to transactions
+                    const subscribeTxMessage = {
+                        type: 'SUBSCRIBE_TXS',
+                        data: {
+                            address: tokenAddress
+                        }
+                    };
+                    ws.send(JSON.stringify(subscribeTxMessage));
+                    log(\`🔄 Subscribed to transactions for \${tokenAddress.substring(0, 8)}...\`);
                 }, 1000);
             };
 
@@ -346,7 +630,7 @@ function generateChartHTML() {
             if (data.type === 'PRICE_DATA' && data.data) {
                 // Handle OHLCV data from WebSocket
                 const ohlcvData = data.data;
-                console.log(ohlcvData);
+                console.log('PRICE_DATA:', ohlcvData);
 
                 if (ohlcvData.unixTime) {
                     // Update candlestick series with OHLCV data
@@ -370,8 +654,42 @@ function generateChartHTML() {
                         volumeSeries.update(volumeData);
                     }
 
-                    log(\`📊 OHLCV update: O=$\${candleData.open.toFixed(6)} H=$\${candleData.high.toFixed(6)} L=$\${candleData.low.toFixed(6)} C=$\${candleData.close.toFixed(6)} V=\${ohlcvData.v || 0} at \${new Date(ohlcvData.unixTime * 1000).toLocaleTimeString()}\`);
+                    // Update current price
+                    updateCurrentPrice(candleData.close);
                 }
+            } else if (data.type === 'TOKEN_STATS_DATA' && data.data) {
+                // Handle token stats updates
+                const statsData = data.data;
+
+                if (statsData.price !== undefined) {
+                    tokenStats.price = statsData.price;
+                    updateCurrentPrice(statsData.price);
+                }
+
+                if (statsData.price_change_24h_percent !== undefined) {
+                    tokenStats.priceChange24h = statsData.price_change_24h_percent;
+                    updatePriceChange(statsData.price_change_24h_percent);
+                }
+
+                if (statsData.marketcap !== undefined) {
+                    tokenStats.marketCap = statsData.marketcap;
+                    updateMarketCap(statsData.marketcap);
+                }
+
+                if (statsData.liquidity !== undefined) {
+                    tokenStats.liquidity = statsData.liquidity;
+                    updateLiquidity(statsData.liquidity);
+                }
+
+                if (statsData.volume_24h_usd !== undefined) {
+                    tokenStats.volume24h = statsData.volume_24h_usd;
+                    updateVolume24h(statsData.volume_24h_usd);
+                }
+            } else if (data.type === 'TXS_DATA' && data.data) {
+                // Handle transaction data
+                const txData = data.data;
+
+                addTransaction(txData);
             }
         }
 
