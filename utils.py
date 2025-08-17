@@ -121,17 +121,8 @@ class BirdeyeDataServicesWebSocket:
     """WebSocket client for real-time Birdeye Data Services data"""
 
     def __init__(self, api_key_type='business'):
-        if api_key_type == 'standard':
-            self.api_key = os.getenv('BDS_STANDARD_API_KEY')
-        elif api_key_type == 'business':
-            self.api_key = os.getenv('BDS_API_KEY')
-        else:
-            raise ValueError("api_key_type must be 'standard' or 'business'")
-
-        if not self.api_key:
-            raise ValueError(f"API key not found for {api_key_type} tier")
-
-        self.ws_url = "wss://public-api.birdeye.so/socket/solana?x-api-key={self.api_key}"
+        self.api_key = os.getenv('BDS_API_KEY')
+        self.ws_url = f"wss://public-api.birdeye.so/socket/solana?x-api-key={self.api_key}"
         self.ws = None
         self.callbacks = {}
         
@@ -168,9 +159,11 @@ class BirdeyeDataServicesWebSocket:
         self.callbacks['PRICE_DATA'] = callback
         message = {
             "type": "SUBSCRIBE_PRICE",
-            "data": {
+            "data":  {
+                "queryType": "simple",
+                "chartType": "1m",
                 "address": address,
-                "apikey": self.api_key
+                "currency": "usd"
             }
         }
         if self.ws:
@@ -182,8 +175,8 @@ class BirdeyeDataServicesWebSocket:
         message = {
             "type": "SUBSCRIBE_TXS",
             "data": {
+                "queryType": "simple",
                 "address": address,
-                "apikey": self.api_key
             }
         }
         if self.ws:
