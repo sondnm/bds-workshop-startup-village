@@ -106,9 +106,14 @@ class BirdeyeDataServices:
         """Get detailed breakdown of wallet holdings"""
         return self._make_request("/wallet/v2/net-worth-details", {"wallet": wallet_address})
     
-    def get_ohlcv_data(self, address, type_="1D"):
+    def get_ohlcv_data(self, address, type_="1D", time_from=None, time_to=None):
         """Get OHLCV candlestick data"""
-        params = {"address": address, "type": type_}
+        params = {
+                "address": address,
+                "type": type_,
+                "time_from": time_from or int((datetime.now() - timedelta(days=30)).timestamp()),
+                "time_to": time_to or int(datetime.now().timestamp()),
+                }
         return self._make_request("/defi/v3/ohlcv", params)
 
 
