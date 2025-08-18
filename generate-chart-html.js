@@ -134,7 +134,7 @@ function generateChartHTML() {
             color: white !important;
             transform: scale(1.05);
             border-radius: 4px;
-            padding: 2px 4px;
+            padding: 0;
         }
         .transactions-panel {
             background-color: #2a2a2a;
@@ -382,7 +382,7 @@ function generateChartHTML() {
                 log(\`🔄 Loading historical data for \${tokenAddress.substring(0, 8)}...\`);
                 
                 // Call Birdeye API directly
-                const response = await fetch(\`\${BDS_BASE_URL}/defi/v3/ohlcv?address=\${tokenAddress}&type=\${timeframe}&time_to=\${Math.floor(Date.now() / 1000)}&mode=count&count_limit=200\`, {
+                const response = await fetch(\`\${BDS_BASE_URL}/defi/v3/ohlcv?address=\${tokenAddress}&type=\${timeframe}&time_to=\${Math.floor(Date.now() / 1000)}&mode=count&count_limit=500\`, {
                     headers: {
                         'X-API-KEY': BDS_API_KEY,
                         'Content-Type': 'application/json'
@@ -795,11 +795,6 @@ try {
     console.log(`✅ HTML chart generated successfully!`);
     console.log(`📄 File saved as: ${outputPath}`);
     console.log(`🌐 Open the file in your browser to use the chart`);
-    console.log(`\n📋 Features:`);
-    console.log(`   • Direct connection to Birdeye API`);
-    console.log(`   • Real-time WebSocket updates`);
-    console.log(`   • TradingView Lightweight Charts`);
-    console.log(`   • Standalone HTML file (no server required)`);
 } catch (error) {
     console.error(`❌ Error generating HTML file: ${error.message}`);
     process.exit(1);

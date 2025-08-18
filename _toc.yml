@@ -10,3 +10,5 @@ chapters:
   title: "Token Information Dashboard"
 - file: 02_Wallet_Portfolio
   title: "Wallet Portfolio Manager"
+- file: 03_Realtime_Updates
+  title: "Realtime Token Stats and OHLCV"
