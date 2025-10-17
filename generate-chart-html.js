@@ -337,6 +337,7 @@ function generateChartHTML() {
                 const response = await fetch(\`\${BDS_BASE_URL}/defi/token_overview?address=\${tokenAddress}\`, {
                     headers: {
                         'X-API-KEY': BDS_API_KEY,
+                        'x-chain': 'base',
                         'Content-Type': 'application/json'
                     }
                 });
@@ -385,6 +386,7 @@ function generateChartHTML() {
                 const response = await fetch(\`\${BDS_BASE_URL}/defi/v3/ohlcv?address=\${tokenAddress}&type=\${timeframe}&time_to=\${Math.floor(Date.now() / 1000)}&mode=count&count_limit=500\`, {
                     headers: {
                         'X-API-KEY': BDS_API_KEY,
+                        'x-chain': 'base',
                         'Content-Type': 'application/json'
                     }
                 });

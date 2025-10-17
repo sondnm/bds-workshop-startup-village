@@ -35,7 +35,8 @@ class BirdeyeDataServices:
         self.base_url = "https://public-api.birdeye.so"
         self.headers = {
             'X-API-KEY': self.api_key,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'x-chain': 'base',
         }
 
     def _make_request(self, endpoint, params=None):

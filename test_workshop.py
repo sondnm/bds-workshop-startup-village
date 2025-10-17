@@ -155,6 +155,7 @@ def test_direct_http():
         url = "https://public-api.birdeye.so/defi/price"
         headers = {
             'X-API-KEY': api_key,
+            'x-chain': 'base',
             'Content-Type': 'application/json'
         }
         params = {'address': '0x4200000000000000000000000000000000000006'}
