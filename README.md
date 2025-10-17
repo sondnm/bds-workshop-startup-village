@@ -11,14 +11,8 @@ Welcome to the Birdeye Data Services API Workshop! This hands-on session will te
 - Create interactive price charts
 - Display recent transactions
 
-### Section 2: Wallet Portfolio Management
-- Calculate current net worth
-- Build portfolio charts
-- Analyze token holdings
-- Real-time updates via WebSocket
-- Interactive token exploration
-
-### Section 3: Real-time OHLCV Updates & Professional Charts
+### Section 2: Token Dashboard & Real-time Updates
+- Real-time token monitoring and analysis
 - Generate standalone HTML charts with TradingView integration
 - Real-time WebSocket OHLCV data updates
 - Professional candlestick and volume visualization
@@ -60,10 +54,9 @@ BDS_API_KEY=your_business_api_key_here
 ## 📚 Workshop Structure
 
 1. **00_Introduction.ipynb** - Workshop overview and setup
-2. **01_Token_Information.ipynb** - Token querying and analysis
-3. **02_Wallet_Portfolio.ipynb** - Portfolio management and WebSocket
-4. **03_Realtime_Updates.ipynb** - Real-time OHLCV updates and professional charts
-5. **utils.py** - Shared utility functions
+2. **01_Token_Information.ipynb** - Section 1: Token querying and analysis
+3. **02_Token_Dashboard.ipynb** - Section 2: Real-time updates and professional charts
+4. **utils.py** - Shared utility functions
 
 ### Chart Generator Files
 - **generate-chart-html.js** - HTML chart generator script

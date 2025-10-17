@@ -11,8 +11,8 @@ execute:
 format: jb-book
 chapters:
 - file: 00_Introduction
-- file: 01_Token_Information  
-- file: 02_Wallet_Portfolio
+- file: 01_Token_Information
+- file: 02_Token_Dashboard
 
 # Information about where the book exists on the web
 repository:

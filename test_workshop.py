@@ -84,56 +84,41 @@ def test_api_functionality():
     
     # Test token price
     try:
-        sol_address = "So11111111111111111111111111111111111111112"
-        price = birdeye.get_token_price(sol_address)
+        weth_address = "0x4200000000000000000000000000000000000006"
+        price = birdeye.get_token_price(weth_address)
         if price and 'data' in price:
-            sol_price = price['data']['value']
-            print(f"✅ Token price: SOL = ${sol_price:.2f}")
+            weth_price = price['data']['value']
+            print(f"✅ Token price: WETH = ${weth_price:.2f}")
         else:
             print("⚠️ Token price returned no data")
     except Exception as e:
         print(f"❌ Token price failed: {e}")
-    
+
     # Test token market data
     try:
-        market_data = birdeye.get_token_market_data(sol_address)
+        market_data = birdeye.get_token_market_data(weth_address)
         if market_data and 'data' in market_data:
             price = market_data['data'].get('price', 0)
             market_cap = market_data['data'].get('market_cap', 0)
-            print(f"✅ Token market data: SOL = ${price:.2f}, MC = ${market_cap/1e9:.1f}B")
+            print(f"✅ Token market data: WETH = ${price:.2f}, MC = ${market_cap/1e9:.1f}B")
         else:
             print("⚠️ Token market data returned no data")
     except Exception as e:
         print(f"❌ Token market data failed: {e}")
-    
-    # Test wallet endpoints
-    print("\n💼 Testing Wallet Endpoints...")
-    
-    example_wallet = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
-    
-    try:
-        net_worth = birdeye.get_wallet_net_worth(example_wallet)
-        if net_worth and 'data' in net_worth:
-            total = net_worth['data'].get('totalUsd', 0)
-            print(f"✅ Wallet net worth: {format_currency(total)}")
-        else:
-            print("⚠️ Wallet net worth returned no data")
-    except Exception as e:
-        print(f"❌ Wallet net worth failed: {e}")
     
     return True
 
 def test_visualization():
     """Test visualization functions"""
     print("\n📊 Testing Visualization Functions...")
-    
+
     birdeye = BirdeyeDataServices()
-    sol_address = "So11111111111111111111111111111111111111112"
-    
+    weth_address = "0x4200000000000000000000000000000000000006"
+
     # Test price chart
     try:
-        history = birdeye.get_price_history(sol_address, type_="1D")
-        chart = create_price_chart(history, "SOL")
+        history = birdeye.get_price_history(weth_address, type_="1D")
+        chart = create_price_chart(history, "WETH")
         if chart:
             print("✅ Price chart created successfully")
         else:
@@ -172,15 +157,15 @@ def test_direct_http():
             'X-API-KEY': api_key,
             'Content-Type': 'application/json'
         }
-        params = {'address': 'So11111111111111111111111111111111111111112'}
-        
+        params = {'address': '0x4200000000000000000000000000000000000006'}
+
         response = requests.get(url, headers=headers, params=params)
-        
+
         if response.status_code == 200:
             data = response.json()
             if data and 'data' in data:
                 price = data['data']['value']
-                print(f"✅ Direct HTTP request: SOL = ${price:.2f}")
+                print(f"✅ Direct HTTP request: WETH = ${price:.2f}")
             else:
                 print("⚠️ Direct HTTP request returned no data")
         else:

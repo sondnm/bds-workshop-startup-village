@@ -122,7 +122,7 @@ class BirdeyeDataServicesWebSocket:
 
     def __init__(self, api_key_type='business'):
         self.api_key = os.getenv('BDS_API_KEY')
-        self.ws_url = f"wss://public-api.birdeye.so/socket/solana?x-api-key={self.api_key}"
+        self.ws_url = f"wss://public-api.birdeye.so/socket/base?x-api-key={self.api_key}"
         self.ws = None
         self.callbacks = {}
         

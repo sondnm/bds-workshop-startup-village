@@ -5,10 +5,10 @@ require('dotenv').config();
 // API configuration
 const BDS_API_KEY = process.env.BDS_API_KEY || process.env.BDS_STANDARD_API_KEY;
 const BDS_BASE_URL = 'https://public-api.birdeye.so';
-const BDS_WS_URL = 'wss://public-api.birdeye.so/socket/solana';
+const BDS_WS_URL = 'wss://public-api.birdeye.so/socket/base';
 
-// SOL token address
-const SOL_ADDRESS = 'So11111111111111111111111111111111111111112';
+// WETH token address
+const SOL_ADDRESS = '0x4200000000000000000000000000000000000006';
 
 console.log('🚀 BDS Chart HTML Generator');
 console.log('📊 Generating standalone HTML chart...');
@@ -636,7 +636,7 @@ function generateChartHTML() {
                     // Update candlestick series with OHLCV data
                     const candleData = {
                         time: ohlcvData.unixTime,
-                        open: parseFloat(ohlcvData.o),
+                        open: parseFloat(ohlcvData.o, 4),
                         high: parseFloat(ohlcvData.h),
                         low: parseFloat(ohlcvData.l),
                         close: parseFloat(ohlcvData.c)
